@@ -1,0 +1,8 @@
+node_modules/
+captures/
+queue/tmp/*
+queue/small/dropped/*
+queue/small/processing/*
+queue/small/done/*
+queue/small/failed/*
+!queue/**/.gitkeep

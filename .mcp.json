@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "course-tools": {
+      "command": "pnpm",
+      "args": ["--silent", "exec", "tsx", "mcp/example-server.ts"]
+    }
+  }
+}
