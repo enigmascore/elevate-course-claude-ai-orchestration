@@ -127,12 +127,13 @@ is part of the assignment, as is the GitHub variant of the whole pipeline.
 | `implementer` | everyday model — runs many times, gated by tests | sonnet |
 | labelling / titling / routing chores | small fast model | haiku |
 | test running, queue mechanics | no model — deterministic code | — |
-| your `target-implementer` | your choice — JUSTIFY it in the PR | — |
+| your `target-implementer` | everyday model — the assignment names it | sonnet |
 
-Each agent file's frontmatter carries its tier and the reason. A student on a
-bigger plan may substitute their top tier; the tier, not the name, is the
-rule. Dropping the implementer to the small fast model is a deliberate course
-experiment: watch verification substitute for capability.
+Each agent file's frontmatter carries its tier and the reason; your
+`target-implementer` must too, in your own words. A student on a bigger plan
+may substitute their top tier; the tier, not the name, is the rule. Dropping
+an implementer to the small fast model is a deliberate course experiment for
+the curious: watch verification substitute for capability.
 
 ## The marked assignment, in one paragraph
 
@@ -142,7 +143,8 @@ variant of the pipeline — the decomposer raises each small requirement as an
 issue labelled `target-module`, a poller dispatches agents by label, and the
 pipeline runs each job's tests and re-queues on red; (3) author
 `.claude/agents/target-implementer.md`, route the `target-module` label to it,
-and choose (and justify) its model; (4) run your pipeline over
+and set its model to the everyday tier the assignment names, with a tier
+comment saying why; (4) run your pipeline over
 `requirements/version_toolkit_requirements.md` until every
 `tests/gate/version-toolkit/*.spec.ts` is green — the AGENTS write
 `target/version-toolkit.ts`, not you. Never edit the tests or the contract's
@@ -178,7 +180,7 @@ ls mcp/my-server.ts .claude/agents/target-implementer.md
 
 Then a **process review**: the merged agent PRs on your question branch (their
 timestamps, issue numbers and the `target-module` label), the issue trail, the
-agent definition with its model justification — evidence that the
+agent definition with its tier comment — evidence that the
 ORCHESTRATION did the work. Hand-writing `target/version-toolkit.ts` and
 claiming the pipeline did it is the known shortcut, and the trail is what
 catches it. Traceability of agent work is itself a lesson.
