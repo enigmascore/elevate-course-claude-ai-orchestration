@@ -18,10 +18,14 @@ tests already written and **red**.
 | The toolkit's requirements | `requirements/version_toolkit_requirements.md` | The resolved requirements file your pipeline will consume |
 
 ```bash
-pnpm verify          # tsc + every test: red at a clone, green when the assignment is done
-pnpm test:shipped    # only what ships: green from the first clone
-pnpm test:gate       # only the two assignment suites: red until you are done
+make                 # lists every target with its description
+make verify          # tsc + every test: red at a clone, green when the assignment is done
+make test-shipped    # only what ships: green from the first clone
+make test-gate       # only the two assignment suites: red until you are done
 ```
+
+Every command below is a `make` target (wrapping the pnpm scripts in
+`package.json`); `make` on its own prints the list.
 
 ## Getting started
 
@@ -35,9 +39,9 @@ pnpm test:gate       # only the two assignment suites: red until you are done
 ```bash
 git clone https://github.com/YOUR_USER/firstname-lastname-claude-ai-orchestration.git
 cd firstname-lastname-claude-ai-orchestration
-pnpm install
-pnpm test:shipped    # everything shipped is green
-pnpm test:gate       # the two assignment suites are red - that is the starting line
+make install
+make test-shipped    # everything shipped is green
+make test-gate       # the two assignment suites are red - that is the starting line
 ```
 
 You need Node 24+ and pnpm (`npm install -g pnpm`), plus Docker Desktop for
@@ -48,10 +52,10 @@ the sandbox.
 Build and enter the container:
 
 ```bash
-./docker/run.sh
+make sandbox
 ```
 
-The script maps this repository into the container **read-write, except the
+The script behind it, `docker/run.sh`, maps this repository into the container **read-write, except the
 control plane**: `orchestration/`, `.claude/`, `.mcp.json` and `docker/` are
 re-mounted **read-only**. Inside the container, claude's auto mode can edit
 the work tree (including `target/` and `mcp/`) and the queue, but can never
@@ -73,7 +77,7 @@ gh auth login   # for the GitHub half of the course
 In one terminal (host or container):
 
 ```bash
-pnpm proxy captures/
+make proxy
 ```
 
 In another, point claude at it for one command:
@@ -101,11 +105,12 @@ no model is involved.
 ## The pipeline
 
 ```bash
-pnpm pipeline                                          # terminal 1: watch the queue
-pnpm decompose requirements/version_toolkit_requirements.md   # terminal 2: split into jobs
+make pipeline        # terminal 1, FIRST: the watcher
+make decompose       # terminal 2, once: split requirements/version_toolkit_requirements.md into jobs
 ```
 
-The decomposer agent splits the requirements into small files; the plumbing
+Order matters the way it does for any queue: start the watcher, then drop
+the work. The decomposer agent splits the requirements into small files; the plumbing
 drops each into `queue/small/dropped/` via an atomic rename; the watcher
 claims each job by atomically moving it to `queue/small/processing/` and runs
 the implementer agent on it; finished jobs land in `done/`, exhausted retries
@@ -151,6 +156,14 @@ comment saying why; (4) run your pipeline over
 `target/version-toolkit.ts`, not you. Never edit the tests or the contract's
 signatures.
 
+Wire your variant into the two `make` targets shipped as placeholders,
+`make poll` and `make decompose-github`, and run it the way you ran the file
+pipeline: **`make poll` first** in one terminal (it keeps running, one pass a
+minute, and waits whenever one of its pull requests is open), then
+`make decompose-github` once in another. Review and merge each pull request
+as it appears; when the queue is empty and every gate test is green, stop
+the poller.
+
 Git shape: your question branch (created from your issue) is the base. Each
 agent works on its own `agent/<issue-number>` branch and raises a pull request
 **into your question branch**; **you** review and merge each one. When both
@@ -172,11 +185,11 @@ question branch -- the ONE PR --> main           ( URL pasted )
 The marker clones your question branch and runs, in this order:
 
 ```bash
-pnpm install
-pnpm verify                                       # tsc + all suites green, gate suites included
+make install
+make verify                                       # tsc + all suites green, gate suites included
 git diff origin/main...HEAD -- tests/             # must print nothing: tests untouched
 ls mcp/my-server.ts .claude/agents/target-implementer.md
-./docker/run.sh                                   # builds and enters
+make sandbox                                      # builds and enters
 ```
 
 Then a **process review**: the merged agent PRs on your question branch (their
@@ -189,6 +202,7 @@ catches it. Traceability of agent work is itself a lesson.
 ## Layout
 
 ```
+Makefile          every command, with `make` listing them
 .claude/agents/   agent definitions (control plane, read-only in the sandbox)
 docker/           sandbox image + run script (read-only in the sandbox)
 mcp/              example-server.ts (works) and my-server.ts (your slot)
