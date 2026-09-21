@@ -140,8 +140,9 @@ the curious: watch verification substitute for capability.
 Starting from your private copy of this template: (1) build your MCP server
 in the `my-tools` slot until its gate suite is green; (2) build the GitHub
 variant of the pipeline — the decomposer raises each small requirement as an
-issue labelled `target-module`, a poller dispatches agents by label, and the
-pipeline runs each job's tests and re-queues on red; (3) author
+issue labelled `target-module`, a poller dispatches agents by label, the
+pipeline runs each job's tests and re-queues on red, and the poller never
+starts a new job while one of its pull requests awaits your review; (3) author
 `.claude/agents/target-implementer.md`, route the `target-module` label to it,
 and set its model to the everyday tier the assignment names, with a tier
 comment saying why; (4) run your pipeline over
