@@ -1,4 +1,8 @@
 ---
+# tier: EVERYDAY MODEL (sonnet as of authoring). Implementers run MANY times and
+# their output is gated by tests, so the everyday model suits them - and dropping
+# this to the small fast model (haiku) is a deliberate course experiment: watch
+# verification substitute for capability.
 description: Implements one small requirement from the pipeline queue - edits code, runs the checks the requirement names, and stops.
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet

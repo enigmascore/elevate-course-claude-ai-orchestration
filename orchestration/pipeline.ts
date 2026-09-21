@@ -69,6 +69,10 @@ export function createPipeline(opts: PipelineOptions): Pipeline {
       ].join("\n"),
     );
 
+    // NOTE: "success" here is the AGENT saying it succeeded - nothing runs the
+    // job's tests. That is deliberate: the shipped pipeline is open-loop, and
+    // building the TEST GATE (run the job's tests, re-queue on red, fail after
+    // maxAttempts) is part of the marked assignment.
     if (result.ok) {
       complete(paths, name);
       log(`done ${name}`);

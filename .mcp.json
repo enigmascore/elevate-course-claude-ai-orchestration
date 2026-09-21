@@ -3,6 +3,10 @@
     "course-tools": {
       "command": "pnpm",
       "args": ["--silent", "exec", "tsx", "mcp/example-server.ts"]
+    },
+    "my-tools": {
+      "command": "pnpm",
+      "args": ["--silent", "exec", "tsx", "mcp/my-server.ts"]
     }
   }
 }

@@ -2,15 +2,18 @@
   "name": "elevate-course-claude-ai-orchestration",
   "private": true,
   "type": "module",
-  "description": "Practice environment for the Claude AI Orchestration course: docker safe-autonomy sandbox, API logging proxy, example MCP server and a file-based agent pipeline.",
+  "description": "Practice environment for the Claude AI Orchestration course: docker safe-autonomy sandbox, API logging proxy, example MCP server, a file-based agent pipeline - and the marked assignment's two red test suites.",
   "scripts": {
     "proxy": "tsx proxy/logproxy.ts",
     "mcp:example": "tsx mcp/example-server.ts",
+    "mcp:mine": "tsx mcp/my-server.ts",
     "pipeline": "tsx orchestration/pipeline.ts",
     "decompose": "tsx orchestration/decompose.ts",
     "test": "vitest run",
     "tsc:check": "tsc --noEmit",
-    "verify": "pnpm tsc:check && pnpm test"
+    "verify": "pnpm tsc:check && pnpm test",
+    "test:shipped": "vitest run --exclude \"tests/gate/**\"",
+    "test:gate": "vitest run tests/gate"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
