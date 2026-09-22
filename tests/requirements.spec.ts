@@ -1,8 +1,10 @@
 /**
  * The three halves of the assignment's target must agree: the resolved
  * requirements file the pipeline consumes, the typed contract it names, and
- * the red gate tests. Shipped green - a mismatch here is an authoring bug,
- * not a student's.
+ * the gate tests. Shipped green, and it STAYS green once the toolkit is
+ * implemented - it checks agreement, never the stubs themselves ( the gate
+ * suites prove the template's own red state ). A mismatch here is an
+ * authoring bug, not a student's.
  */
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
@@ -33,12 +35,6 @@ describe("requirements/version_toolkit_requirements.md", () => {
       const testFile = `tests/gate/version-toolkit/${kebab}.spec.ts`;
       expect(requirements, `section for ${fn} names ${testFile}`).toContain(testFile);
       expect(fs.existsSync(path.join(root, testFile)), `${testFile} exists`).toBe(true);
-    }
-  });
-
-  it("ships every contract function as a throwing stub", () => {
-    for (const fn of exported) {
-      expect(contract, `${fn} is a stub`).toMatch(new RegExp(`not implemented: ${fn}\\(`));
     }
   });
 });

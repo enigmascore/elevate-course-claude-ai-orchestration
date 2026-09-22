@@ -242,7 +242,7 @@ The marker clones your question branch and runs, in this order:
 ```bash
 make install
 make verify                                       # tsc + all suites green, gate suites included
-git diff origin/main...HEAD -- tests/             # must print nothing: tests untouched
+git diff origin/main...HEAD --diff-filter=MD -- tests/   # must print nothing: shipped tests unmodified ( adding tests is fine )
 grep -rn "execFile\|spawn" orchestration/ | grep claude   # must print nothing: agents only via the runner
 ls mcp/my-server.ts .claude/agents/target-implementer.md
 make sandbox                                      # builds and enters
