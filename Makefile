@@ -5,7 +5,7 @@
 # idiom for a TypeScript repository; make is the house front door ).
 
 .DEFAULT_GOAL := help
-.PHONY: help install verify tsc test-shipped test-gate proxy mcp-example mcp-mine pipeline decompose sandbox poll decompose-github
+.PHONY: help install verify tsc test-shipped test-gate proxy mcp-example mcp-mine pipeline decompose sandbox sandbox-pipeline sandbox-decompose sandbox-poll sandbox-decompose-github sandbox-logs sandbox-stop poll decompose-github
 
 help: ## List all targets with their descriptions
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -38,8 +38,26 @@ mcp-example: ## Run the example MCP server ( course-tools ) standalone on stdio
 mcp-mine: ## Run YOUR MCP server ( my-tools ) standalone on stdio
 	pnpm mcp:mine
 
-sandbox: ## Build ( first time ) and enter the docker safe-autonomy sandbox
+sandbox: ## Build ( first time ) and enter the docker sandbox - the ONLY place agents run
 	./docker/run.sh
+
+sandbox-pipeline: ## FILE pipeline in the sandbox, detached: the watcher ( logs: make sandbox-logs )
+	./docker/run.sh -d make pipeline
+
+sandbox-decompose: ## FILE pipeline in the sandbox: split REQS into queue jobs ( needs sandbox-pipeline running )
+	docker exec -it claude-orchestration-poller make decompose REQS=$(REQS)
+
+sandbox-poll: ## GitHub variant in the sandbox, detached: the poller ( logs: make sandbox-logs )
+	./docker/run.sh -d make poll
+
+sandbox-decompose-github: ## GitHub variant in the sandbox: raise REQS as labelled issues ( needs sandbox-poll running )
+	docker exec -it claude-orchestration-poller make decompose-github REQS=$(REQS)
+
+sandbox-logs: ## Follow the detached sandbox process's log
+	docker logs -f claude-orchestration-poller
+
+sandbox-stop: ## Stop the detached sandbox process
+	-docker rm -f claude-orchestration-poller
 
 # The FILE pipeline ( ships working ) - watcher FIRST, then decompose ----------------------------
 

@@ -6,3 +6,7 @@ queue/small/processing/*
 queue/small/done/*
 queue/small/failed/*
 !queue/**/.gitkeep
+.pnpm-store/
+captures/
+queue/runs.jsonl
+queue/usage.jsonl

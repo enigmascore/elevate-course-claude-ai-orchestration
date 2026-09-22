@@ -96,3 +96,42 @@ export function withAttempt(name: string, attempt: number): string {
   const ext = path.extname(name);
   return `${name.slice(0, name.length - ext.length)}.attempt-${attempt}${ext}`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Stale claims ( 098 3.4.2 ): a worker that dies mid-job leaves its file in processing/ forever.
+// The pipeline stamps a claim with the time it was taken; the sweep re-queues claims older than
+// the run's wall-clock cap. Markers live beside the job, never inside it.
+// ---------------------------------------------------------------------------------------------
+
+function claimMarker(paths: QueuePaths, name: string): string {
+  return path.join(paths.processing, `.${name}.claimed-at`);
+}
+
+/** Record when a claimed job was taken ( called right after a successful claim ). */
+export function markClaimed(paths: QueuePaths, name: string, at: Date = new Date()): void {
+  fs.writeFileSync(claimMarker(paths, name), at.toISOString());
+}
+
+export function clearClaimed(paths: QueuePaths, name: string): void {
+  fs.rmSync(claimMarker(paths, name), { force: true });
+}
+
+/** Jobs in processing/ whose claim is older than `olderThanMs` - a dead worker's leftovers. */
+export function listStaleClaims(paths: QueuePaths, olderThanMs: number, now: Date = new Date()): string[] {
+  return fs
+    .readdirSync(paths.processing)
+    .filter((f) => !f.startsWith("."))
+    .filter((name) => {
+      const marker = claimMarker(paths, name);
+      if (!fs.existsSync(marker)) return true; // claimed by a worker that never stamped it - treat as stale
+      const claimedAt = Date.parse(fs.readFileSync(marker, "utf8"));
+      return Number.isNaN(claimedAt) || now.getTime() - claimedAt > olderThanMs;
+    });
+}
+
+/** Re-queue a stale claim for another attempt ( the sweep's recovery path ). */
+export function recoverStale(paths: QueuePaths, name: string): string {
+  clearClaimed(paths, name);
+  return requeue(paths, name);
+}
+

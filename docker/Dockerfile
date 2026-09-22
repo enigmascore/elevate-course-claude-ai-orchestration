@@ -1,12 +1,17 @@
-# The course sandbox: everything the course teaches runs inside this image,
-# so claude's auto mode can be switched on with the container as its blast
-# radius. Build once, then start it with docker/run.sh (which applies the
-# read-only control-plane mounts).
+# The course sandbox: everything the course teaches runs inside this image, so
+# unattended agents have the container - not your machine - as their blast
+# radius. Build once, then start it with docker/run.sh (or `make sandbox`),
+# which applies the read-only control-plane mounts and the sandbox marker the
+# runner requires.
+#
+# Versions are PINNED (101b 10.3): a student's sandbox must not change under
+# them on a release day. Upgrading is a deliberate template commit, and the
+# course's "Installing the CLI" page names the same Claude Code version.
 FROM node:24-bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       git curl ca-certificates jq ripgrep procps \
+       git make curl ca-certificates jq ripgrep procps \
     && rm -rf /var/lib/apt/lists/*
 
 # The GitHub CLI (the course's issue/PR workflow runs through it).
@@ -18,8 +23,18 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Claude Code and pnpm.
-RUN npm install -g @anthropic-ai/claude-code pnpm
+# Claude Code (interactive half) and pnpm - pinned. The Agent SDK the pipeline
+# uses is a project dependency (package.json) and bundles its own CLI.
+RUN npm install -g @anthropic-ai/claude-code@2.1.278 pnpm@10.16.1
+
+# The runner refuses to run agents unless this is set - it is set only here.
+ENV ORCHESTRATION_SANDBOX=1
+# pnpm's content store stays inside the container, never in the mounted repo.
+ENV npm_config_store_dir=/root/.local/share/pnpm/store
+
+COPY entry.sh /usr/local/bin/sandbox-entry
+RUN chmod +x /usr/local/bin/sandbox-entry
 
 WORKDIR /work
+ENTRYPOINT ["/usr/local/bin/sandbox-entry"]
 CMD ["bash"]

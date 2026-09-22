@@ -3,6 +3,9 @@
 # step in the pipeline: a bad split - overlapping, missing, or untestable pieces
 # - cannot be repaired by the implementers' test-and-retry loop, and this agent
 # runs ONCE per requirements file, so the expensive model is cheap here.
+# permissions: none needed - with Read as its only tool, nothing this agent
+# can do asks for permission.
+name: decomposer
 description: Splits a resolved requirements document into small, independent requirement files for the pipeline queue. Judgment work only - it writes no files; the orchestration code does the file handling.
 tools: Read
 model: opus

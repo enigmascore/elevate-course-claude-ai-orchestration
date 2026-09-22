@@ -12,20 +12,37 @@
 import fs from "node:fs";
 import path from "node:path";
 import { atomicDrop, ensureQueue, queuePaths } from "./queue.js";
-import { ClaudeRunner, type AgentRunner } from "./runner.js";
+import { ClaudeRunner, SANDBOX_REFUSAL, insideSandbox, type AgentRunner } from "./runner.js";
 
 export interface SmallRequirement {
   name: string;
   content: string;
 }
 
-export function parseDecomposition(output: string): SmallRequirement[] {
-  // The agent is instructed to answer with ONLY a JSON array; tolerate a
-  // fenced code block around it.
-  const trimmed = output.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
-  const parsed = JSON.parse(trimmed) as unknown;
-  if (!Array.isArray(parsed)) throw new Error("decomposer did not return a JSON array");
-  return parsed.map((item, i) => {
+/** The decomposer's answer AS a schema ( 101b 10.4 ) - the SDK returns it parsed. */
+export const DECOMPOSITION_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    pieces: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { name: { type: "string" }, content: { type: "string" } },
+        required: ["name", "content"],
+      },
+    },
+  },
+  required: ["pieces"],
+};
+
+/** Turns 8: one answer, `Read` only, plus the round-trip structured output costs. */
+export const DECOMPOSER_MAX_TURNS = 8;
+
+/** Validate the pieces whichever way they arrived - structured or parsed from text. */
+export function validatePieces(parsed: unknown): SmallRequirement[] {
+  const items = Array.isArray(parsed) ? parsed : (parsed as { pieces?: unknown })?.pieces;
+  if (!Array.isArray(items)) throw new Error("decomposer did not return an array of pieces");
+  return items.map((item, i) => {
     const { name, content } = item as { name?: unknown; content?: unknown };
     if (typeof name !== "string" || !/^[a-z0-9][a-z0-9-]*\.md$/.test(name))
       throw new Error(`item ${i}: name must be a kebab-case .md filename`);
@@ -33,6 +50,18 @@ export function parseDecomposition(output: string): SmallRequirement[] {
       throw new Error(`item ${i}: content must be a non-empty string`);
     return { name, content };
   });
+}
+
+export function parseDecomposition(output: string): SmallRequirement[] {
+  // The fallback when no structured output came back: the agent is instructed
+  // to answer with ONLY a JSON array; tolerate a fenced code block around it.
+  const trimmed = output.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  return validatePieces(JSON.parse(trimmed) as unknown);
+}
+
+/** Prefer the SDK's structured answer; fall back to parsing the text. Both are validated. */
+export function piecesFrom(result: { output: string; structured?: unknown }): SmallRequirement[] {
+  return result.structured !== undefined ? validatePieces(result.structured) : parseDecomposition(result.output);
 }
 
 export async function decompose(
@@ -54,11 +83,12 @@ export async function decompose(
       "",
       requirements,
     ].join("\n"),
+    { outputSchema: DECOMPOSITION_SCHEMA, maxTurns: DECOMPOSER_MAX_TURNS },
   );
   if (!result.ok) throw new Error(`decomposer failed: ${result.output}`);
 
   const dropped: string[] = [];
-  for (const req of parseDecomposition(result.output)) {
+  for (const req of piecesFrom(result)) {
     atomicDrop(paths, req.name, req.content);
     dropped.push(req.name);
   }
@@ -66,6 +96,10 @@ export async function decompose(
 }
 
 async function main(): Promise<void> {
+  if (!insideSandbox()) {
+    console.error(SANDBOX_REFUSAL);
+    process.exit(1);
+  }
   const requirementsPath = process.argv[2];
   if (!requirementsPath) {
     console.error("usage: pnpm decompose <path-to-requirements.md>");

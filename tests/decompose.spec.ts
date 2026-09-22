@@ -2,15 +2,15 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { decompose, parseDecomposition } from "../orchestration/decompose.js";
+import { DECOMPOSITION_SCHEMA, DECOMPOSER_MAX_TURNS, decompose, parseDecomposition, piecesFrom } from "../orchestration/decompose.js";
 import { listDropped, queuePaths } from "../orchestration/queue.js";
-import type { AgentRunner, AgentRunResult } from "../orchestration/runner.js";
+import type { AgentRunner, AgentRunResult, RunOptions } from "../orchestration/runner.js";
 
 class OneShotRunner implements AgentRunner {
-  calls: Array<{ agent: string; prompt: string }> = [];
+  calls: Array<{ agent: string; prompt: string; options?: RunOptions }> = [];
   constructor(private readonly result: AgentRunResult) {}
-  async run(agent: string, prompt: string): Promise<AgentRunResult> {
-    this.calls.push({ agent, prompt });
+  async run(agent: string, prompt: string, options?: RunOptions): Promise<AgentRunResult> {
+    this.calls.push({ agent, prompt, options });
     return this.result;
   }
 }
@@ -30,6 +30,18 @@ describe("parseDecomposition", () => {
     expect(() => parseDecomposition('[{"name":"No Spaces.md","content":"x"}]')).toThrow();
     expect(() => parseDecomposition('[{"name":"ok.md","content":"  "}]')).toThrow();
     expect(() => parseDecomposition('{"name":"ok.md","content":"x"}')).toThrow();
+  });
+});
+
+describe("piecesFrom", () => {
+  it("prefers the SDK's structured answer over the text", () => {
+    expect(piecesFrom({ output: "ignored", structured: { pieces: [{ name: "a.md", content: "A" }] } })).toEqual([{ name: "a.md", content: "A" }]);
+  });
+  it("falls back to parsing the text when nothing structured came back", () => {
+    expect(piecesFrom({ output: '[{"name":"b.md","content":"B"}]' })).toEqual([{ name: "b.md", content: "B" }]);
+  });
+  it("validates structured pieces just as strictly", () => {
+    expect(() => piecesFrom({ output: "", structured: { pieces: [{ name: "Bad Name.md", content: "x" }] } })).toThrow(/kebab-case/);
   });
 });
 
@@ -57,6 +69,7 @@ describe("decompose", () => {
 
     expect(runner.calls[0]!.agent).toBe("decomposer");
     expect(runner.calls[0]!.prompt).toContain("Do A. Do B.");
+    expect(runner.calls[0]!.options).toEqual({ outputSchema: DECOMPOSITION_SCHEMA, maxTurns: DECOMPOSER_MAX_TURNS });
     expect(dropped).toEqual(["do-a.md", "do-b.md"]);
     expect(listDropped(queuePaths(root)).sort()).toEqual(["do-a.md", "do-b.md"]);
   });
