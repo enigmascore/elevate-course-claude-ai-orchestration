@@ -8,5 +8,6 @@ queue/small/failed/*
 !queue/**/.gitkeep
 .pnpm-store/
 captures/
-queue/runs.jsonl
+# queue/runs.jsonl is COMMITTED with your final work: it is the agent-level
+# audit trail the marker reads beside your pull requests.
 queue/usage.jsonl

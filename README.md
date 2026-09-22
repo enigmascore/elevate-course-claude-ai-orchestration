@@ -251,7 +251,8 @@ make sandbox                                      # builds and enters
 Then a **process review**: the merged agent PRs on your question branch (their
 timestamps, issue numbers and the `target-module` label), the issue trail, the
 agent definition with its tier comment and permissions block, and
-`queue/runs.jsonl` — evidence that the ORCHESTRATION did the work.
+`queue/runs.jsonl` — commit it with your final work; it is the agent-level
+audit trail — evidence that the ORCHESTRATION did the work.
 Hand-writing `target/version-toolkit.ts` and claiming the pipeline did it is
 the known shortcut, and the trail is what catches it. Traceability of agent
 work is itself a lesson.
